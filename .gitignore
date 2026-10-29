@@ -5,3 +5,5 @@ __pycache__/
 .env
 vision/snapshots/
 vision/homography.npz
+*.mp4
+sim_frame.png

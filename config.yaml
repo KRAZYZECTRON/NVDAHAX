@@ -32,3 +32,56 @@ rover_exclude_cm: 12.0
 object_match_cm: 15.0    # max move between frames to keep the same object id
 object_max_age: 30       # frames an unseen object keeps its id
 arena_margin_cm: 10.0    # drop detections this far outside the arena
+
+# ======================================================================
+# --- Track C: AI, control, sim, main ---
+# Units: cm, seconds, radians unless a key says _deg.
+# Floor frame comes from Track B's tracker (marker 1 = origin, +x -> marker 2, +y -> marker 4).
+
+mode: sim            # sim | real   (override with: python main.py --mode real)
+
+rover:
+  ip: 192.168.43.100 # ESP32 prints its IP over serial on boot (Track A)
+  port: 4210
+  send_hz: 15
+
+cosmos:
+  # Hackathon teams may get a dedicated endpoint: paste its base URL here
+  # (or set NEBIUS_BASE_URL). The key always comes from NEBIUS_API_KEY.
+  base_url: https://api.tokenfactory.nebius.com/v1/
+  model: nvidia/Cosmos3-Super-Reasoner
+  timeout_s: 40
+  max_tokens: 700    # lower this if calls take over ~5 s (caps the reasoning)
+  temperature: 0.2
+  image_max_side: 1024   # frame is downscaled before upload
+  annotate_image: true   # draw "id:label" boxes on the frame sent to Cosmos
+  retries: 1
+  mock: false        # true = offline keyword matcher (sim testing only, never demo it)
+
+control:
+  turn_threshold_deg: 20    # above this heading error: turn in place
+  turn_exit_deg: 8          # stop turning once error is below this (hysteresis)
+  done_dist_cm: 8
+  forward_pwm: 170
+  turn_pwm: 150
+  k_heading: 220            # PWM added/subtracted per radian of heading error
+  slow_dist_cm: 35          # start slowing down inside this distance
+  min_pwm: 120              # must sit above the motors' real deadband (weak AAs -> raise it)
+  max_pwm: 255
+  turn_sign: auto           # auto = from the homography; set 1 or -1 if the rover turns away from targets
+
+mission:
+  stop_short_cm: 14         # aim this far before the object's centre so we don't ram it
+  drive_timeout_s: 40       # give up and stop if not done by then
+
+sim:
+  wheel_base_cm: 13.5
+  max_wheel_speed_cm_s: 35  # wheel speed at PWM 255
+  deadband_pwm: 70          # TT motors don't move below roughly this
+  pose_noise_cm: 0.4
+  heading_noise_deg: 1.0
+  dropout_prob: 0.01        # chance per frame that the tracker loses the marker
+  latency_s: 0.06           # command-to-motion delay
+  px_per_cm: 4.5            # render scale for the fake camera image
+  num_objects: 5
+  seed: 7

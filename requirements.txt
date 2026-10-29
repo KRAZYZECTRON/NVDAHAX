@@ -1,0 +1,5 @@
+opencv-contrib-python>=4.8   # contrib build includes cv2.aruco for the tracker
+numpy
+pyyaml
+openai>=1.40                 # OpenAI-compatible client for Nebius Token Factory
+ultralytics                  # YOLOv8 for vision/detector.py
