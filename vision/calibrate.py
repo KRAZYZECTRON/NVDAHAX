@@ -21,7 +21,7 @@ def main():
     ap.add_argument("--cols", type=int, default=9, help="inner corners across")
     ap.add_argument("--rows", type=int, default=6, help="inner corners down")
     ap.add_argument("--square-mm", type=float, default=25.0, help="measure a printed square")
-    ap.add_argument("--cam", type=int, default=None)
+    ap.add_argument("--cam", default=None, help="camera index or stream URL")
     args = ap.parse_args()
 
     pattern = (args.cols, args.rows)

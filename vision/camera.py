@@ -24,6 +24,17 @@ def open_camera(cfg=None, index=None, width=None, height=None):
     w = width or cfg.get("camera_width", 1920)
     h = height or cfg.get("camera_height", 1080)
 
+    if isinstance(idx, str) and not idx.isdigit():
+        # Network stream (phone/iPad camera app). Resolution/focus/exposure are set in the app.
+        cap = cv2.VideoCapture(idx)
+        if not cap.isOpened():
+            raise RuntimeError(f"Could not open stream {idx}")
+        cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+        print(f"[camera] stream {idx} {int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))}x"
+              f"{int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))}")
+        return cap
+
+    idx = int(idx)
     cap = cv2.VideoCapture(idx, cv2.CAP_DSHOW)
     if not cap.isOpened():
         raise RuntimeError(f"Could not open camera index {idx}")

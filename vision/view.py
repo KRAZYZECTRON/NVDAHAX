@@ -36,7 +36,7 @@ def build_grid(tr):
 def main():
     cfg = load_config()
     ap = argparse.ArgumentParser()
-    ap.add_argument("--cam", type=int, default=None)
+    ap.add_argument("--cam", default=None, help="camera index or stream URL")
     ap.add_argument("--width", type=int, default=None)
     ap.add_argument("--height", type=int, default=None)
     ap.add_argument("--no-yolo", action="store_true")
