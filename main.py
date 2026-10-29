@@ -302,13 +302,16 @@ class App:
         y = 34
         cv2.putText(p, "Fetch Rover", (18, y), cv2.FONT_HERSHEY_SIMPLEX, 0.9, WHITE, 2)
         y += 24
-        cv2.putText(p, "NVIDIA Cosmos3-Super-Reasoner on Nebius", (18, y), cv2.FONT_HERSHEY_SIMPLEX, 0.45, GREY, 1)
+        model = self.cosmos.model_name().split("/")[-1]
+        if self.cosmos.last_call_info.get("text_only"):
+            model += " (text)"
+        cv2.putText(p, f"{model} on Nebius Token Factory"[:46], (18, y), cv2.FONT_HERSHEY_SIMPLEX, 0.45, GREY, 1)
         if self.cfg.get("cosmos", {}).get("mock") or os.environ.get("COSMOS_MOCK", "") not in ("", "0"):
             cv2.putText(p, "MOCK MODE - NOT COSMOS", (18, y + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, RED, 2)
         y += 48
         y = self.text_block(p, "COMMAND", self.command or "-", y, WHITE)
         dots = "." * (1 + int(time.monotonic() * 2) % 3)
-        label = "COSMOS IS THINKING" + dots if self.state == "THINKING" else "COSMOS REASONING"
+        label = "AI IS THINKING" + dots if self.state == "THINKING" else "AI REASONING"
         if self.latency is not None and self.state != "THINKING":
             label += f"  ({self.latency:.1f}s)"
         y = self.text_block(p, label, self.reason, y, YELLOW)

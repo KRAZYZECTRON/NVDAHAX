@@ -7,3 +7,4 @@ vision/snapshots/
 vision/homography.npz
 *.mp4
 sim_frame.png
+test.jpg

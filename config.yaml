@@ -46,10 +46,13 @@ rover:
   send_hz: 15
 
 cosmos:
-  # Hackathon teams may get a dedicated endpoint: paste its base URL here
-  # (or set NEBIUS_BASE_URL). The key always comes from NEBIUS_API_KEY.
-  base_url: https://api.tokenfactory.nebius.com/v1/
-  model: nvidia/Cosmos3-Super-Reasoner
+  # The key always comes from NEBIUS_API_KEY (never put it in this file).
+  # NEBIUS_BASE_URL / COSMOS_MODEL environment variables override these two.
+  # nvidia/Cosmos3-Super-Reasoner is not on public Token Factory (retired Aug 2026);
+  # if the organisers give us a Cosmos endpoint, set base_url + model to it and send_image: true.
+  base_url: https://api.tokenfactory.us-central1.nebius.com/v1/
+  model: nvidia/nemotron-3-super-120b-a12b   # tested: 3.1 s per call, text-only
+  send_image: false  # true = also send the camera frame (vision models); auto = try, fall back to text
   timeout_s: 40
   max_tokens: 700    # lower this if calls take over ~5 s (caps the reasoning)
   temperature: 0.2

@@ -13,6 +13,9 @@ then says why). Called ONCE per command, never inside the control loop.
 The API key is read from NEBIUS_API_KEY. NEBIUS_BASE_URL and COSMOS_MODEL
 override config.yaml if set. COSMOS_MOCK=1 uses an offline keyword matcher.
 
+Any vision or text model on Token Factory works: with cosmos.send_image "auto",
+a model that rejects images is retried with the object list only (text).
+
 Quick test with a photo (first-30-minutes task):
     python -m ai.cosmos photo.jpg "bring me something to write with" --labels cup,scissors,pen
 """
@@ -35,9 +38,11 @@ from common import load_config
 
 # Filled after every call so main.py can show latency without changing the contract.
 last_call_info: dict = {}
+_TEXT_ONLY: set[str] = set()  # models that rejected an image this session
 
 SYSTEM_PROMPT = (
-    "You are the brain of a small fetch robot. A camera looks straight down at a floor. "
+    "You are the brain of a small fetch robot. A camera looks straight down at a floor; "
+    "you get the list of objects it detected (and the picture, when available). "
     "The user asks for something. Pick the ONE object from the numbered list that best "
     "satisfies the request, using common sense about what objects are used for. "
     "Only choose ids from the list. If nothing in the list fits, use -1. "
@@ -58,7 +63,14 @@ def _settings() -> dict:
         "annotate_image": bool(cfg.get("annotate_image", True)),
         "retries": int(cfg.get("retries", 1)),
         "mock": os.environ.get("COSMOS_MOCK", "") not in ("", "0") or bool(cfg.get("mock", False)),
+        "send_image": str(os.environ.get("COSMOS_SEND_IMAGE") or cfg.get("send_image", "auto")).lower(),
     }
+
+
+def model_name() -> str:
+    """The model that will answer (for the on-screen label)."""
+    s = _settings()
+    return "offline mock" if s["mock"] else s["model"]
 
 
 # ---------------------------------------------------------------- image prep
@@ -184,22 +196,25 @@ def choose_target(frame: np.ndarray, command: str, objects: list[dict]) -> dict:
     from openai import OpenAI  # imported here so mock mode works without the package
 
     client = OpenAI(base_url=s["base_url"], api_key=api_key, timeout=s["timeout_s"], max_retries=0)
-    img = annotate(frame, objects) if s["annotate_image"] else frame
-    data_url = encode_image(img, s["image_max_side"])
-    messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},
-        {
-            "role": "user",
-            "content": [
-                {"type": "text", "text": build_user_text(command, objects)},
-                {"type": "image_url", "image_url": {"url": data_url}},
-            ],
-        },
-    ]
+    text_part = {"type": "text", "text": build_user_text(command, objects)}
+    use_image = s["send_image"] not in ("false", "0", "no") and s["model"] not in _TEXT_ONLY
+    image_part = None
+    if use_image:
+        img = annotate(frame, objects) if s["annotate_image"] else frame
+        image_part = {"type": "image_url", "image_url": {"url": encode_image(img, s["image_max_side"])}}
+
+    def make_messages() -> list[dict]:
+        content = [text_part, image_part] if use_image else [text_part]
+        return [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": content}]
+
+    messages = make_messages()
     valid = {int(o["id"]) for o in objects}
     raw = ""
     err: Exception | None = None
-    for attempt in range(s["retries"] + 1):
+    attempts = s["retries"] + 1
+    attempt = 0
+    while attempt < attempts:
+        attempt += 1
         try:
             resp = client.chat.completions.create(
                 model=s["model"],
@@ -209,16 +224,24 @@ def choose_target(frame: np.ndarray, command: str, objects: list[dict]) -> dict:
             )
             msg = resp.choices[0].message
             raw = msg.content or ""
+            last_call_info["text_only"] = not use_image
             last_call_info["usage"] = getattr(resp, "usage", None) and resp.usage.model_dump()
             parsed = parse_answer(raw, valid)
             if parsed is None and getattr(msg, "reasoning_content", None):
                 parsed = parse_answer(msg.reasoning_content, valid)
             if parsed is not None:
-                last_call_info.update({"latency_s": time.time() - t0, "ok": True, "raw": raw, "attempts": attempt + 1})
+                last_call_info.update({"latency_s": time.time() - t0, "ok": True, "raw": raw, "attempts": attempt})
                 return parsed
             err = ValueError(f"could not parse a valid answer from: {raw[:300]!r}")
         except Exception as e:  # network, timeout, 4xx/5xx
             err = e
+            status = getattr(e, "status_code", None)
+            if use_image and s["send_image"] == "auto" and status in (400, 415, 422):
+                # model probably doesn't take images: remember that and retry with text only
+                _TEXT_ONLY.add(s["model"])
+                use_image = False
+                messages = make_messages()
+                attempts += 1
     last_call_info.update({"latency_s": time.time() - t0, "raw": raw, "error": repr(err)})
     raise RuntimeError(f"Cosmos call failed: {err}")
 
@@ -241,7 +264,7 @@ def _cli() -> None:
     if not objects:
         sys.exit("give --labels so Cosmos has a list to choose from, e.g. --labels cup,scissors,pen")
     s = _settings()
-    print(f"model={s['model']}  base_url={s['base_url']}  mock={s['mock']}")
+    print(f"model={s['model']}  base_url={s['base_url']}  mock={s['mock']}  send_image={s['send_image']}")
     try:
         res = choose_target(frame, args.command, objects)
     finally:
