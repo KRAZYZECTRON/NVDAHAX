@@ -27,7 +27,6 @@ class Detector:
         model_name = cfg.get("yolo_model", "yolov8n.pt")
         self.model = YOLO(model_name)
         self.device = 0 if torch.cuda.is_available() else "cpu"
-        self.half = self.device == 0
         print(f"[detector] {model_name} on {'cuda' if self.device == 0 else 'cpu'}")
 
         self.imgsz = int(cfg.get("yolo_imgsz", 960))
@@ -97,7 +96,7 @@ class Detector:
             return []
 
         r = self.model.predict(frame, imgsz=self.imgsz, conf=self.conf, classes=self.classes,
-                               device=self.device, half=self.half, verbose=False)[0]
+                               device=self.device, verbose=False)[0]
         if len(r.boxes) == 0:
             self._last = self._assign_ids([])
             return []
