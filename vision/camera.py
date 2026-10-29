@@ -37,7 +37,11 @@ def open_camera(cfg=None, index=None, width=None, height=None):
     idx = int(idx)
     cap = cv2.VideoCapture(idx, cv2.CAP_DSHOW)
     if not cap.isOpened():
-        raise RuntimeError(f"Could not open camera index {idx}")
+        # Some virtual cameras (e.g. DroidCam) only work through Media Foundation.
+        cap = cv2.VideoCapture(idx, cv2.CAP_MSMF)
+        if not cap.isOpened():
+            raise RuntimeError(f"Could not open camera index {idx}")
+        print("[camera] DirectShow failed, using Media Foundation")
     # FOURCC must be set before the resolution for MJPG to stick on DirectShow.
     cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, w)
