@@ -31,7 +31,7 @@ def main():
     cap = open_camera(cfg, index=args.cam)
     obj_pts, img_pts, size = [], [], None
     term = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
-    cv2.namedWindow("calibrate", cv2.WINDOW_NORMAL)
+    cv2.namedWindow("calibrate", cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
 
     while True:
         ok, frame = cap.read()

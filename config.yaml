@@ -9,10 +9,10 @@ camera_exposure: null    # null = auto. Manual: DirectShow log2(seconds), -6 ~ 1
 camera_focus: 0          # 0 = infinity on Logitech. null = leave autofocus on
 
 # --- Track B: arena (MEASURE THESE) ---
-arena_w_cm: 200.0        # centre of marker 1 -> centre of marker 2
-arena_h_cm: 150.0        # centre of marker 1 -> centre of marker 4
-camera_height_cm: 200.0  # lens -> floor
-marker_height_cm: 10.0   # floor -> top surface of the rover marker
+arena_w_cm: 34.0         # centre of marker 1 -> centre of marker 2 (estimated from image; confirm with tape)
+arena_h_cm: 74.0         # centre of marker 1 -> centre of marker 4 (estimated from image; confirm with tape)
+camera_height_cm: 100.0  # lens -> floor
+marker_height_cm: 6.5    # floor -> top surface of the rover marker (6.5 = test box; set to the real rover's height)
 object_height_cm: 5.0    # ~half a typical demo object's height (parallax for YOLO points)
 
 # --- Track B: tracker ---
@@ -23,11 +23,11 @@ pose_ema_alpha: 0.6      # 1.0 = no smoothing
 pose_max_missed: 3       # get_pose returns None after this many frames without marker 0
 
 # --- Track B: detector ---
-yolo_model: yolov8n.pt
+yolo_model: yolov8m.pt   # n missed most objects from overhead; m ~18 ms/frame on the RTX 5070
 yolo_imgsz: 960
-yolo_conf: 0.35
+yolo_conf: 0.25
 yolo_every_n: 1          # run YOLO every N frames (raise on CPU)
-demo_labels: [cup, bottle, cell phone, scissors, book, remote, sports ball]
+demo_labels: [cup, bottle, cell phone, scissors, book, remote, sports ball, mouse, banana, apple, orange]
 rover_exclude_cm: 12.0
 object_match_cm: 15.0    # max move between frames to keep the same object id
 object_max_age: 30       # frames an unseen object keeps its id

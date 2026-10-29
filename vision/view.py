@@ -62,7 +62,7 @@ def main():
                 print(f"px ({u}, {v}) -> floor ({f[0]:.1f}, {f[1]:.1f}) cm")
 
     win = "track B view"
-    cv2.namedWindow(win, cv2.WINDOW_NORMAL)
+    cv2.namedWindow(win, cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
     cv2.setMouseCallback(win, on_mouse)
     grid, grid_ver = None, -1
     fps, t_prev = 0.0, time.perf_counter()
